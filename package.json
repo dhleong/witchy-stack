@@ -1,0 +1,7 @@
+{
+  "name": "witchy-stack",
+  "version": "0.1.0",
+  "scripts": {
+    "eas-build-pre-install": "node scripts/eas-build-pre-install.js"
+  }
+}
