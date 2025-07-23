@@ -17,27 +17,29 @@
          get-path (fn get-path [db]
                     (get-in db read-path ::not-found))]
      (->interceptor
-       :id (keyword 'witchy.persister (cond
-                                        (keyword? db-path) db-path
-                                        (coll? db-path) (path->str db-path)
-                                        :else (str db-path)))
-       :after (fn path-persister-after [context]
-                (when goog.DEBUG
+      :id (keyword 'witchy.persister (cond
+                                       (keyword? db-path) db-path
+                                       (coll? db-path) (path->str db-path)
+                                       :else (str db-path)))
+      :before (when goog.DEBUG
+                (fn path-persister-verifier [context]
                   (when (some #(= :path (:id %))
                               (:stack context))
                     (println
-                      "[WARN] Your path-persister for"
-                      db-path
-                      "should be installed BEFORE any (path) interceptors")))
+                     "[WARN] Your path-persister for"
+                     db-path
+                     "should be installed BEFORE any (path) interceptors"))
 
-                (let [initial-value (get-path (get-coeffect context :db {}))
-                      resulting-value (get-path (get-effect context :db {}))]
-                  (if-not (or (= ::not-found initial-value)
-                              (= ::not-found resulting-value)
-                              (= initial-value resulting-value))
-                    (assoc-effect
-                      context
-                      save-fx
-                      (data->fx-payload resulting-value))
+                  context))
+      :after (fn path-persister-after [context]
+               (let [initial-value (get-path (get-coeffect context :db {}))
+                     resulting-value (get-path (get-effect context :db {}))]
+                 (if-not (or (= ::not-found initial-value)
+                             (= ::not-found resulting-value)
+                             (= initial-value resulting-value))
+                   (assoc-effect
+                    context
+                    save-fx
+                    (data->fx-payload resulting-value))
 
-                    context)))))))
+                   context)))))))
