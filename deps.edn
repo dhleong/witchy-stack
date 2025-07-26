@@ -1,1 +1,1 @@
-{:paths ["packages/core/src"]}
+{:paths ["packages/core/src" "packages/core/db"]}
