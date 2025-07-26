@@ -83,6 +83,7 @@
               :limit actual-limit}))
 
           (when (and select?
+                     initial-limit
                      (>= (count results) initial-limit))
             (p/let [subsequent-results
                     (db/query
@@ -113,14 +114,26 @@
                            :params (clj->js params)})))))))
 
 (defn create-parameterized
+  "Create a parameterized Queryable.
+
+   When invoked with an `on-success` function, by default the Queryable
+   will run twice: first, with an :initial-limit (default to 20); and
+   again to load the rest, using :offset.
+
+   `{:initial-limit nil}` may be passed to always run a single query.
+
+   Invoking the Queryable with only the params object will always run
+   a single, un-modified query."
   ([id query] (create-parameterized id nil query))
   ([id {:keys [params-spec initial-limit] :or {initial-limit 20}} query]
    (let [f (fn parameterized-query
-             ([params] (parameterized-query identity params))
+             ([params] (parameterized-query nil params))
              ([on-success params]
               (perform-parameterized-query
-               id query params-spec initial-limit
-               on-success params)))
+               id query params-spec
+               (when on-success initial-limit)
+               (or on-success identity)
+               params)))
          format (fn format-parameterized
                   ([params] (format-parameterized params nil))
                   ([params opts]
@@ -130,9 +143,9 @@
          tables (extract-tables query)]
      (->Queryable id format f tables query))))
 
-(defn with-params [^Queryable parametrized new-id params]
-  (let [f (.-f parametrized)
-        format (.-format parametrized)
+(defn with-params [^Queryable parameterized new-id params]
+  (let [f (.-f parameterized)
+        format (.-format parameterized)
         f' (fn [on-success params']
              (f on-success
                 (merge (assoc params ::id new-id)
@@ -142,8 +155,8 @@
      new-id
      #(format (merge params %))
      f'
-     (.-tables parametrized)
-     (.-query parametrized))))
+     (.-tables parameterized)
+     (.-query parameterized))))
 
 (defn queryable? [v]
   (instance? Queryable v))
