@@ -19,11 +19,14 @@
                                          (and (vector? %)
                                               (keyword? (first %))))
                                     column))))]
-    ; TODO: unique keys
     {:create-table [table-name :if-not-exists]
      :with-columns (concat columns
                            (when-let [primary-key (:primary-key table)]
-                             [[(into [:primary-key] primary-key)]]))}))
+                             [[(into [:primary-key] primary-key)]])
+                           (when-let [unique (:unique table)]
+                             [(map
+                               #(into [:unique nil] %)
+                               unique)]))}))
 
 (defn- perform-create-table [{:keys [execute]} table-spec]
   (let [sql (format-create-table table-spec)]
