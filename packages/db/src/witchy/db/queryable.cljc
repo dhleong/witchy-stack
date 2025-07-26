@@ -4,6 +4,7 @@
    [clojure.spec.alpha :as s]
    [promesa.core :as p]
    [witchy.db.core :as db]
+   [witchy.db.dao :as dao]
    [witchy.db.observation :refer [extract-tables]]
    [witchy.db.shared :refer [format-sql]])
   #?(:clj (:import
@@ -26,15 +27,15 @@
     (f on-success params)))
 
 (defn create [id query]
-  (let [f (fn simple-query
+  (let [tables (extract-tables query)
+        f (fn simple-query
             ([] (simple-query identity))
             ([on-success]
-             (p/let [results (db/query query)]
+             (p/let [results (dao/query tables query)]
                (on-success {:query-id id
                             :mode :initial
                             :results results})
-               results)))
-        tables (extract-tables query)]
+               results)))]
     (->Queryable id format-sql f tables query)))
 
 (defn- perform-parameterized-query [id query params-spec initial-limit
@@ -66,7 +67,7 @@
                              select?
                              (update :limit (fnil min initial-limit) initial-limit))
                 results (if select?
-                          (db/query full-query)
+                          (dao/query full-query)
                           (db/execute full-query))
                 actual-limit (:limit full-query)
 
@@ -86,7 +87,7 @@
                      initial-limit
                      (>= (count results) initial-limit))
             (p/let [subsequent-results
-                    (db/query
+                    (dao/query
                      (assoc query
                             :limit -1 ; IE "no limit"; load all the rest
                             :offset actual-limit

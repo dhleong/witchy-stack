@@ -33,7 +33,7 @@
 
     :else
     (throw (ex-info
-            (str "Unexpected reg-query value for " query-id)
+            (str "Unexpected reg-query value for " query-id ": " (type query-or-factory))
             {:value query-or-factory}))))
 
 (defn- deref-tables [tables]

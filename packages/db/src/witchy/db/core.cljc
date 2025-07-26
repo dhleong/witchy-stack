@@ -2,11 +2,11 @@
   (:require
    [promesa.core :as p]
    [witchy.db.observation :refer [notify-updates-from-query]]
+   [witchy.db.internal :refer [state]]
    [witchy.db.setup :as setup]
    [witchy.db.shared :as shared]))
 
 (defonce ^:private ^:dynamic *notify-transaction?* false)
-(defonce ^:private state (atom {}))
 
 (def ^:private log-error #? (:cljs js/console.error
                              :clj println))

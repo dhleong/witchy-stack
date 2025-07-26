@@ -10,6 +10,7 @@
 (defn setup [db-state schema]
   (assoc
    db-state
+   :schema schema
    :db
    (-> (p/let [db-value (:db db-state)
                {:keys [query execute]} db-state
