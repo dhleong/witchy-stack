@@ -64,7 +64,7 @@
                              :always
                              (assoc :params params)
 
-                             select?
+                             (and select? initial-limit)
                              (update :limit (fnil min initial-limit) initial-limit))
                 results (if select?
                           (dao/query full-query)
