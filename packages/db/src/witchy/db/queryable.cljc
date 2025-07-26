@@ -36,7 +36,7 @@
                             :mode :initial
                             :results results})
                results)))]
-    (->Queryable id format-sql f tables query)))
+    (->Queryable id (partial format-sql query) f tables query)))
 
 (defn- perform-parameterized-query [id query params-spec initial-limit
                                     on-success params]
