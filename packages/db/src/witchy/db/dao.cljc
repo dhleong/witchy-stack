@@ -1,6 +1,7 @@
 (ns witchy.db.dao
   "Common DAO helper functions"
   (:require
+   [promesa.core :as p]
    [witchy.db.core :as db]
    [witchy.db.internal :as internal]
    [witchy.db.observation :refer [extract-tables]]))
@@ -42,5 +43,5 @@
    transform any special/transformed columns"
   ([statement] (query (extract-tables statement) statement))
   ([tables statement]
-   (->> (db/query statement)
-        (map (partial ->clj tables) statement))))
+   (p/let [rows (db/query statement)]
+     (map (partial ->clj tables) rows))))
