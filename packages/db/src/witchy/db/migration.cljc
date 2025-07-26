@@ -13,9 +13,12 @@
 (defn- format-create-table [[table-name table]]
   (let [columns (->> (:columns table)
                      (map (fn [column]
-                            ; Keep only keyword values; we might have
-                            ; some transformers in there...
-                            (filter keyword? column))))]
+                            ; Keep only keyword or column descriptor values; we
+                            ; might have some transformers in there...
+                            (filter #(or (keyword? %)
+                                         (and (vector? %)
+                                              (keyword? (first %))))
+                                    column))))]
     ; TODO: unique keys
     {:create-table [table-name :if-not-exists]
      :with-columns (concat columns
