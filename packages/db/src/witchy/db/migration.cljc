@@ -10,6 +10,15 @@
 (def ^:private format-obj #? (:cljs clj->js
                               :clj identity))
 
+(defn- execute-logging [{:keys [execute]} sql]
+  (-> (execute sql)
+      (p/catch
+       (fn [e]
+         (log-error "[migration] executing: " (format-obj sql))
+         (log-error "            sql:\n"
+                    (first (format-sql (assoc sql :pretty true))))
+         (p/rejected e)))))
+
 (defn- format-create-table [[table-name table]]
   (let [columns (->> (:columns table)
                      (map (fn [column]
@@ -28,25 +37,22 @@
                                #(into [:unique nil] %)
                                unique)]))}))
 
-(defn- perform-create-table [{:keys [execute]} table-spec]
+(defn- perform-create-table [cmds table-spec]
   (let [sql (format-create-table table-spec)]
-    (-> (execute sql)
-        (p/catch
-         (fn [e]
-           (log-error "[migration] executing: " (format-obj sql))
-           (log-error "            sql:\n"
-                      (first (format-sql (assoc sql :pretty true))))
-           (p/rejected e))))))
+    (execute-logging cmds sql)))
 
-(defn- perform-create-trigger [{:keys [execute]} [trigger-name spec]]
+(defn- format-create-index [table-name index-name columns]
+  {:create-index (-> [index-name]
+                     (conj (concat [table-name] columns))
+                     (conj :if-not-exists))})
+
+(defn- perform-create-index [cmds table-name index-name columns]
+  (let [sql (format-create-index table-name index-name columns)]
+    (execute-logging cmds sql)))
+
+(defn- perform-create-trigger [cmds [trigger-name spec]]
   (let [sql (assoc spec :create-trigger [trigger-name :if-not-exists])]
-    (-> (execute sql)
-        (p/catch
-         (fn [e]
-           (log-error "[migration] executing: " (format-obj sql))
-           (log-error "            sql:\n"
-                      (first (format-sql (assoc sql :pretty true))))
-           (p/rejected e))))))
+    (execute-logging cmds sql)))
 
 (defn perform [{:keys [execute] :as cmds} initial-version schema]
   (p/let [new-version
@@ -59,8 +65,11 @@
               ; TODO: Consider: PRAGMA journal_mode = WAL
 
              (p/doseq [spec (:tables schema)]
-               ; TODO: indexes
-               (perform-create-table cmds spec))
+               (perform-create-table cmds spec)
+               (let [[table-name table-spec] spec]
+                 (p/doseq [[index-name & columns] (:indexes table-spec)]
+                   (println "index=" index-name columns)
+                   (perform-create-index cmds table-name index-name columns))))
 
              (p/doseq [spec (:triggers schema)]
                (perform-create-trigger cmds spec)))
