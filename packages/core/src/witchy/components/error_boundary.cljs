@@ -1,6 +1,6 @@
 (ns witchy.components.error-boundary
   (:require
-   ["react-native" :as rn]
+   [cljs.pprint :as pprint]
    [reagent.core :as r]))
 
 (when goog.DEBUG
@@ -17,12 +17,39 @@
                               ; clear
                               #{}))))
 
-(defn- default-error-view [info]
-  ; TODO: This could be nicer, but for the most part we
-  ; probably won't see it anyway...
-  [:> rn/View {:background-color :red}
-   [:> rn/Text {:color :black}
-    (str info)]])
+(def ^:private default-error-view
+  (try
+    (let [rn (js/require "react-native")]
+
+      (fn default-error-view [info]
+        ; TODO: This could be nicer, but for the most part we
+        ; probably won't see it anyway...
+        [:> rn.View {:background-color :red}
+         [:> rn.Text {:color :black}
+          (str info)]]))
+    (catch :default _
+      (fn default-error-view [{:keys [error info]} info-atom err-atom]
+        [:div.error-boundary {:style {:width "100%"}}
+         [:div.error-boundary-title "Oops! Something went wrong"]
+         [:div [:a {:href "#"
+                    :on-click (fn [^js e]
+                                (.stopPropagation e)
+                                (reset! info-atom nil)
+                                (reset! err-atom nil))}
+                "Try again"]]
+
+         (when info
+           [:pre "Component Stack:\n"
+            (.-componentStack info)])
+
+         [:pre "Error:\n"
+          (cond
+            (ex-message error) (str (ex-message error) "\n"
+                                    (with-out-str
+                                      (binding [pprint/*print-right-margin* 40]
+                                        (pprint/pprint (ex-data error))))
+                                    (.-stack error))
+            :else (str error))]]))))
 
 (defn error-boundary [& _]
   (r/with-let [err (r/atom nil)
@@ -58,6 +85,8 @@
                             [default-error-view
                              {:props props
                               :info @info-atom
-                              :error e}]
+                              :error e}
+                             info-atom
+                             err]
 
                             (into [:<>] children))))})))
