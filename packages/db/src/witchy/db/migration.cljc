@@ -42,9 +42,8 @@
     (execute-logging cmds sql)))
 
 (defn- format-create-index [table-name index-name columns]
-  {:create-index (-> [index-name]
-                     (conj (concat [table-name] columns))
-                     (conj :if-not-exists))})
+  {:create-index (-> [[index-name :if-not-exists]]
+                     (conj (concat [table-name] columns)))})
 
 (defn- perform-create-index [cmds table-name index-name columns]
   (let [sql (format-create-index table-name index-name columns)]
@@ -60,6 +59,7 @@
             (= (:version schema) initial-version)
             nil
 
+            ; Initial setup
             (= 0 initial-version)
             (p/do!
               ; TODO: Consider: PRAGMA journal_mode = WAL
@@ -68,11 +68,13 @@
                (perform-create-table cmds spec)
                (let [[table-name table-spec] spec]
                  (p/doseq [[index-name & columns] (:indexes table-spec)]
-                   (println "index=" index-name columns)
                    (perform-create-index cmds table-name index-name columns))))
 
              (p/doseq [spec (:triggers schema)]
-               (perform-create-trigger cmds spec)))
+               (perform-create-trigger cmds spec))
+
+             ; We migrated directly to the schema's version
+             (:version schema))
 
             ; TODO: Migrations
             :else
