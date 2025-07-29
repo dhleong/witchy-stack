@@ -4,22 +4,23 @@
    [promesa.core :as p]
    [witchy.db.core :as db]
    [witchy.db.internal :as internal]
-   [witchy.db.observation :refer [extract-tables]]))
+   [witchy.db.observation :refer [extract-tables]]
+   [witchy.db.transforms :as transforms]))
 
 (defn ->db [table-id map-like]
-  (let [_table (internal/table-schema table-id)]
-    ; TODO: Validate and/or transform any special columns
-    map-like))
+  (let [table (internal/table-schema table-id)]
+    (transforms/perform-clj->db table map-like)))
 
 (defn ->clj [table-id-or-ids map-like]
   (let [table-ids (if (keyword? table-id-or-ids)
                     [table-id-or-ids]
                     table-id-or-ids)
-        ; TODO: Assemble a combined dict of special columns.
-        ; For now, we simply doall to verify the table IDs
-        _tables (doall (map internal/table-schema table-ids))]
-    ; TODO: Un-transform any special columns
-    map-like))
+        tables (map internal/table-schema table-ids)]
+    (reduce
+     (fn [v table]
+       (transforms/perform-db->clj table v))
+     map-like
+     tables)))
 
 (defn- replace-or-insert [method table-id map-likes]
   (when (seq map-likes)
@@ -44,4 +45,6 @@
   ([statement] (query (extract-tables statement) statement))
   ([tables statement]
    (p/let [rows (db/query statement)]
+     ; TODO: If rows rename a transformed column, we kinda need to
+     ; transform that renamed column, too
      (map (partial ->clj tables) rows))))
