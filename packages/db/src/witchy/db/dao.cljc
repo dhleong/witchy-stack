@@ -47,7 +47,8 @@
    (p/let [rows (db/query statement)]
      ; TODO: If rows rename a transformed column, we kinda need to
      ; transform that renamed column, too
-     (map (partial ->clj tables) rows))))
+     ; NOTE: returning a vector is required for reg-query to work right
+     (mapv (partial ->clj tables) rows))))
 
 (defn- build-where-clause [{:keys [primary-key]} value]
   (cond

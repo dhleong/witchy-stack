@@ -6,25 +6,14 @@
    [witchy.db.core :as db]
    [witchy.db.dao :as dao]
    [witchy.db.observation :refer [extract-tables]]
-   [witchy.db.shared :refer [format-sql]])
-  #?(:clj (:import
-           [clojure.lang IFn])))
+   [witchy.db.shared :refer [format-sql]]
+   [witchy.db.types :refer [Queryable ->Queryable]]))
 
 (def ^:private log-error #? (:cljs js/console.error
                              :clj println))
 
 (def ^:private now-ms #? (:cljs js/Date.now
                           :clj System/currentTimeMillis))
-
-(deftype Queryable [id format f tables query]
-  IFn
-  (-invoke [_this]
-    (f))
-  (-invoke [_this params]
-    ; NOTE: For non-parametrized queries, this arity is on-success
-    (f params))
-  (-invoke [_this on-success params]
-    (f on-success params)))
 
 (defn create [id query]
   (let [tables (extract-tables query)
@@ -172,7 +161,8 @@
     [{:results old} :initial]
     {:state :success
      :results (cond-> results
-                (> (count old) limit)
+                (and limit
+                     (> (count old) limit))
                 (into (subvec old limit)))}
 
     [{:results old} :append]

@@ -9,7 +9,8 @@
    [re-frame.subs :refer [deref-input-signals]]
    [reagent.core :as r]
    [witchy.db.observation :refer [deref-table-versions]]
-   [witchy.db.queryable :as queryable :refer [Queryable queryable?]]))
+   [witchy.db.queryable :as queryable :refer [queryable?]]
+   [witchy.db.types :refer [Queryable]]))
 
 (defn build-queryable [query-id query-or-factory signals query-vec]
   (cond
@@ -125,6 +126,9 @@
         (let [results-atom (r/atom nil)
               last-query (atom nil)
               on-success (fn [results]
+                           (def last-on-success {:query-id query-id
+                                                 :atom-value @results-atom
+                                                 :results results})
                            (swap!
                             results-atom
                             queryable/apply-query-results
