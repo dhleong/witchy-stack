@@ -4,7 +4,10 @@
    [medley.core :refer [map-vals]]
    [witchy.db.transforms :as transforms]))
 
-(defn- extract-table-column-transforms [table-schema]
+(defn- extract-table-column-transforms
+  "Columns may be declared with type:
+   - `:transit` for the value to be stored in a transit-serialized format"
+  [table-schema]
   (loop [table-schema' (assoc table-schema :columns [])
          columns (:columns table-schema)]
     (if-some [column (first columns)]
@@ -24,14 +27,20 @@
       ; Done!
       table-schema')))
 
-(defn- extract-column-transforms
-  "Columns may be declared with type:
-   - `:transit` for the value to be stored in a transit-serialized format"
-  [schema]
-  (update schema :tables (partial map-vals extract-table-column-transforms)))
+(defn- extract-primary-key [table-schema]
+  (let [pk (or (:primary-key table-schema)
+               (some->> (:columns table-schema)
+                        (filter (partial some #{:primary-key}))
+                        (ffirst)))]
+    (assoc table-schema :primary-key pk)))
+
+(def ^:private expand-table-schema
+  (comp
+   extract-table-column-transforms
+   extract-primary-key))
 
 (defn expand-schema
   "Expand schema to support dao operations, etc."
   [schema]
   (-> schema
-      (extract-column-transforms)))
+      (update :tables (partial map-vals expand-table-schema))))

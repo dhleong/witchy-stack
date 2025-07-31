@@ -48,3 +48,31 @@
      ; TODO: If rows rename a transformed column, we kinda need to
      ; transform that renamed column, too
      (map (partial ->clj tables) rows))))
+
+(defn- build-where-clause [{:keys [primary-key]} value]
+  (cond
+    (keyword? primary-key)
+    [:= primary-key value]
+
+    (sequential? primary-key)
+    (into [:and]
+          (map
+           (fn [column pk-value]
+             [:= column (if (map? value)
+                           ; ignore the MapEntry and use the original map
+                          (get value column)
+                          pk-value)])
+           primary-key
+           value))))
+
+(defn by-primary-key
+  "Read a single row from a table by its primary key. If the table's primary
+   key is compound, you may provide either a tuple or a map of column names"
+  [table-id primary-key]
+  (p/let [table (internal/table-schema table-id)
+          where-clause (build-where-clause table primary-key)
+          rows (query [table-id]
+                      {:select :*
+                       :from table-id
+                       :where where-clause})]
+    (first rows)))
