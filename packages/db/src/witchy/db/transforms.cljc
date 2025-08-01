@@ -12,9 +12,12 @@
   IColumnTransform
   (db-column-type [_] :string)
   (db->clj [_ db-value]
-    (t/read (t/reader :json) db-value))
+    (when db-value
+      (def last-v ["hi?" db-value])
+      (t/read (t/reader :json) db-value)))
   (clj->db [_ clj-value]
-    (t/write (t/writer :json) clj-value)))
+    (when clj-value
+      (t/write (t/writer :json) clj-value))))
 
 (def ^:private shared-transit-transformer (->TransitTransformer))
 
@@ -36,16 +39,21 @@
     (when (satisfies? IColumnTransform column-type)
       column-type)))
 
-(defn- perform-transform [f update-fn table value]
+(defn- perform-transform [f contains?' update' table value]
   (reduce
    (fn [v' [column transform]]
-     (update-fn v' column (partial f transform)))
+     (cond-> v'
+       (contains?' v' column)
+       (update' column (partial f transform))))
    value
    (:transforms table)))
 
 (def perform-clj->db
-  (partial perform-transform clj->db update))
+  (partial perform-transform clj->db contains? update))
 
 (def perform-db->clj
-  (partial perform-transform db->clj #? (:clj update
-                                         :cljs j/update!)))
+  (partial perform-transform db->clj
+           #?(:clj contains?
+              :cljs j/contains?)
+           #?(:clj update
+              :cljs j/update!)))

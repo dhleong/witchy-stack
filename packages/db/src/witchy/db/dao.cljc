@@ -12,9 +12,9 @@
     (transforms/perform-clj->db table map-like)))
 
 (defn ->clj [table-id-or-ids map-like]
-  (let [table-ids (if (keyword? table-id-or-ids)
-                    [table-id-or-ids]
-                    table-id-or-ids)
+  (let [table-ids (->> (if (keyword? table-id-or-ids)
+                         [table-id-or-ids]
+                         table-id-or-ids))
         tables (map internal/table-schema table-ids)]
     (reduce
      (fn [v table]
@@ -44,11 +44,13 @@
    transform any special/transformed columns"
   ([statement] (query (extract-tables statement) statement))
   ([tables statement]
-   (p/let [rows (db/query statement)]
+   (p/let [rows (db/query statement)
+           with-tables (into #{} (keys (:with statement)))
+           transform-tables (->> tables (remove with-tables))]
      ; TODO: If rows rename a transformed column, we kinda need to
      ; transform that renamed column, too
      ; NOTE: returning a vector is required for reg-query to work right
-     (mapv (partial ->clj tables) rows))))
+     (mapv (partial ->clj transform-tables) rows))))
 
 (defn- build-where-clause [{:keys [primary-key]} value]
   (cond
