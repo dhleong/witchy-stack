@@ -2,6 +2,8 @@
   "name": "witchy-stack",
   "version": "0.1.0",
   "scripts": {
-    "eas-build-pre-install": "node scripts/eas-build-pre-install.js"
+    "eas-build-pre-install": "node scripts/eas-build-pre-install.js",
+    "test": "pnpm run --stream '/test:/'",
+    "test:db": "clojure -X:db-test"
   }
 }

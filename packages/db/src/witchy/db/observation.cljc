@@ -1,7 +1,7 @@
 (ns witchy.db.observation
   (:require
    [medley.core :refer [map-vals]]
-   [reagent.core :as r]))
+   [witchy.db.interop :refer [ratom]]))
 
 ; map of table-name -> (r/atom version)
 (defonce ^:private ^:dynamic *table-versions* (atom {}))
@@ -14,7 +14,7 @@
     (merge
      m
      (zipmap not-initialized
-             (map (fn [_] (r/atom 0)) not-initialized)))))
+             (map (fn [_] (ratom 0)) not-initialized)))))
 
 (defn deref-table-versions [table-names]
   (->> (-> (swap! *table-versions* select-versions table-names)
@@ -27,7 +27,7 @@
     ; We want to keep the ratom in place
     (do (swap! ratom f)
         ratom)
-    (r/atom default-ratom-value)))
+    (ratom default-ratom-value)))
 
 (defn notify-table-updated [table-name]
   (swap!
@@ -50,8 +50,12 @@
           (keyword? from) [from]
           (vector? from) (keep dealias from)))
 
-      (when-let [[table _cond] (:join query)]
-        [(dealias table)])
+      (mapcat
+       (fn [join-kind]
+         (when-let [[table _cond] (join-kind query)]
+           [(dealias table)]))
+       #{:join :left-join :right-join
+         :inner-join :outer-join :full-join})
 
       (when-let [join-by (:join-by query)]
         ; eg: :join-by [:join [[:thread-labels :tl]

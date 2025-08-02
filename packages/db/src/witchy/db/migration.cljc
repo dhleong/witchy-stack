@@ -24,7 +24,10 @@
    :with-columns (concat
                   (:columns table)
                   (when-let [primary-key (:primary-key table)]
-                    [[(into [:primary-key] primary-key)]])
+                    ; NOTE: If primary-key is not seq? then it was
+                    ; just extracted by our transform code
+                    (when (seq? primary-key)
+                      [[(into [:primary-key] primary-key)]]))
                   (when-let [unique (:unique table)]
                     [(map
                       #(into [:unique nil] %)

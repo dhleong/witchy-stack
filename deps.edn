@@ -1,3 +1,11 @@
-{:paths ["packages/core/src" "packages/core/db"]
+{:paths ["packages/core/src" "packages/db/src"]
 
- :deps {com.github.seancorfield/honeysql {:mvn/version "2.7.1325"}}}
+ :deps {com.github.seancorfield/honeysql {:mvn/version "2.7.1325"}
+        dev.weavejester/medley {:mvn/version "1.8.1"}}
+
+ :aliases
+ {:db-test {:extra-paths ["packages/db/test"]
+            :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+            :main-opts ["-m" "cognitect.test-runner"]
+            :exec-fn cognitect.test-runner.api/test
+            :exec-args {:dirs ["packages/db/test"]}}}}

@@ -7,7 +7,7 @@
    [re-frame.loggers :refer [console]]
    [re-frame.registrar :refer [register-handler]]
    [re-frame.subs :refer [deref-input-signals]]
-   [reagent.core :as r]
+   [witchy.db.interop :refer [ratom]]
    [witchy.db.observation :refer [deref-table-versions]]
    [witchy.db.queryable :as queryable :refer [queryable?]]
    [witchy.db.types :refer [Queryable]]))
@@ -123,12 +123,9 @@
      (fn subs-handler-fn
        ([db query-vec] (subs-handler-fn db query-vec nil))
        ([_db query-vec dynamic-vec]
-        (let [results-atom (r/atom nil)
+        (let [results-atom (ratom nil)
               last-query (atom nil)
               on-success (fn [results]
-                           (def last-on-success {:query-id query-id
-                                                 :atom-value @results-atom
-                                                 :results results})
                            (swap!
                             results-atom
                             queryable/apply-query-results
