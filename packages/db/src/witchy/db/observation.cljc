@@ -1,7 +1,7 @@
 (ns witchy.db.observation
   (:require
    [medley.core :refer [map-vals]]
-   [witchy.db.interop :refer [ratom]]))
+   [witchy.db.interop :as i]))
 
 ; map of table-name -> (r/atom version)
 (defonce ^:private ^:dynamic *table-versions* (atom {}))
@@ -14,7 +14,7 @@
     (merge
      m
      (zipmap not-initialized
-             (map (fn [_] (ratom 0)) not-initialized)))))
+             (map (fn [_] (i/ratom 0)) not-initialized)))))
 
 (defn deref-table-versions [table-names]
   (->> (-> (swap! *table-versions* select-versions table-names)
@@ -27,7 +27,7 @@
     ; We want to keep the ratom in place
     (do (swap! ratom f)
         ratom)
-    (ratom default-ratom-value)))
+    (i/ratom default-ratom-value)))
 
 (defn notify-table-updated [table-name]
   (swap!
