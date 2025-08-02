@@ -8,7 +8,6 @@
 ; code, so may not re-render the current screen. This hack forces the issue
 (defonce hot-reloads (r/atom 0))
 
-#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (def deref-hot-reloads
   (if goog.DEBUG
     (fn deref-hot-reloads []
