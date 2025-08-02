@@ -1,5 +1,4 @@
 (ns witchy.db.reactive
-  #_{:clj-kondo/ignore [:private-call]}
   (:require
    [re-frame.core :refer [subscribe]]
    [re-frame.db :refer [app-db]]
@@ -134,7 +133,6 @@
            (fn []
              (let [inputs (inputs-fn query-vec dynamic-vec)
                    signals (when inputs
-                             #_{:clj-kondo/ignore [:private-call]}
                              (deref-input-signals inputs query-id))
 
                    [^Queryable queryable params] (build-queryable

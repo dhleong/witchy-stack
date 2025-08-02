@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "eas-build-pre-install": "node scripts/eas-build-pre-install.js",
+    "lint": "clojure -Sdeps '{:deps {clj-kondo/clj-kondo {:mvn/version \"RELEASE\"}}}' -M -m clj-kondo.main --config .clj-kondo/config.edn --lint packages/core/src --lint packages/db/src",
     "test": "pnpm run --stream '/test:/'",
     "test:db": "clojure -X:db-test"
   }
