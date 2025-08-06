@@ -79,3 +79,11 @@
                        :from table-id
                        :where where-clause})]
     (first rows)))
+
+(defn update-primary-key [table-id primary-key map-like]
+  (p/let [table (internal/table-schema table-id)
+          where-clause (build-where-clause table primary-key)]
+    (db/execute {:update table-id
+                 :set (->db table-id map-like)
+                 :where where-clause})))
+
