@@ -37,7 +37,7 @@
   (replace-or-insert :replace-into table-id map-likes))
 
 (defn replace-map [table-id map-like]
-  (insert-maps table-id [map-like]))
+  (replace-maps table-id [map-like]))
 
 (defn query
   "Unlike the core query function, this dao method will automatically
