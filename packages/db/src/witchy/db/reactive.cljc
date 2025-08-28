@@ -37,7 +37,6 @@
             {:value query-or-factory}))))
 
 (defn- deref-tables [tables]
-  (println " - subscribe to: " tables)
   (deref-table-versions tables))
 
 (defn- derive-inputs-fn [err-header query input-args]
