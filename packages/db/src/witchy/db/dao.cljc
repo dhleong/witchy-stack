@@ -95,6 +95,5 @@
           where-clauses (map (partial build-where-clause table) primary-keys)
           rows (query [table-id]
                       {:delete-from table-id
-                       :from table-id
                        :where (into [:or] where-clauses)})]
     (first rows)))
