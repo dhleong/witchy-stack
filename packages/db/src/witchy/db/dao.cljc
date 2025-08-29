@@ -87,3 +87,14 @@
                  :set (->db table-id map-like)
                  :where where-clause})))
 
+(defn delete-primary-keys
+  "Delete a collection of entries by their primary keys in the given table.
+   See by-primary-key for how to provide a primary key."
+  [table-id primary-keys]
+  (p/let [table (internal/table-schema table-id)
+          where-clauses (map (partial build-where-clause table) primary-keys)
+          rows (query [table-id]
+                      {:delete-from table-id
+                       :from table-id
+                       :where (into [:or] where-clauses)})]
+    (first rows)))
