@@ -13,7 +13,6 @@
   (db-column-type [_] :string)
   (db->clj [_ db-value]
     (when db-value
-      (def last-v ["hi?" db-value])
       (t/read (t/reader :json) db-value)))
   (clj->db [_ clj-value]
     (when clj-value

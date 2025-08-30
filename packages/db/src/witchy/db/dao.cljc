@@ -11,16 +11,37 @@
   (let [table (internal/table-schema table-id)]
     (transforms/perform-clj->db table map-like)))
 
+(defn- verify-compatible-transforms [already-run proposed]
+  (reduce-kv
+   (fn [m k v]
+     (let [existing (get already-run k :unset)]
+       (cond
+         (= existing :unset) m ; New transform
+         (= existing v) (dissoc m k) ; Compatible
+         :else (throw (ex-info (str "Incompatible transforms found for column " k)
+                               {:column k
+                                :existing-transform existing
+                                :proposed-transform v})))))
+   proposed
+   proposed))
+
 (defn ->clj [table-id-or-ids map-like]
   (let [table-ids (->> (if (keyword? table-id-or-ids)
                          [table-id-or-ids]
                          table-id-or-ids))
         tables (map internal/table-schema table-ids)]
-    (reduce
-     (fn [v table]
-       (transforms/perform-db->clj table v))
-     map-like
-     tables)))
+    (loop [v map-like
+           tables tables
+           transforms {}]
+      (if-some [table (first tables)]
+        (let [to-apply (verify-compatible-transforms transforms (:transforms table))]
+          (recur
+           (transforms/perform-db->clj (assoc table :transforms to-apply) v)
+           (next tables)
+           (merge transforms to-apply)))
+
+        ; Done!
+        v))))
 
 (defn- replace-or-insert [method table-id map-likes]
   (when (seq map-likes)
@@ -48,7 +69,10 @@
            with-tables (into #{} (keys (:with statement)))
            transform-tables (->> tables (remove with-tables))]
      ; TODO: If rows rename a transformed column, we kinda need to
-     ; transform that renamed column, too
+     ; transform that renamed column, too.
+     ; TODO: In addition, it would be better to directly pass the transforms,
+     ; so we can select based on the actual table's columns, rather than just
+     ; blindly applying everything from each table
      ; NOTE: returning a vector is required for reg-query to work right
      (mapv (partial ->clj transform-tables) rows))))
 

@@ -1,7 +1,10 @@
 {:paths ["packages/core/src" "packages/db/src"]
 
- :deps {com.github.seancorfield/honeysql {:mvn/version "2.7.1325"}
-        dev.weavejester/medley {:mvn/version "1.8.1"}}
+ :deps {com.cognitect/transit-cljs {:mvn/version "0.8.264"}
+        com.cognitect/transit-clj {:mvn/version "1.0.333"}
+        com.github.seancorfield/honeysql {:mvn/version "2.7.1325"}
+        dev.weavejester/medley {:mvn/version "1.8.1"}
+        funcool/promesa {:mvn/version "11.0.671"}}
 
  :aliases
  {:db-test {:extra-paths ["packages/db/test"]

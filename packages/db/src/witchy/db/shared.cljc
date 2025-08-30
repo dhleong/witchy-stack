@@ -86,7 +86,7 @@
 (defn format-sql [statement]
   (try
     (format-sql-impl statement)
-    (catch :default e
+    (catch #? (:cljs :default :clj Throwable) e
       (#? (:cljs js/console.warn
            :clj println)
        "Failed to format statement: "
@@ -96,12 +96,12 @@
                 (update :values (fn [v]
                                   (str "(" (count v) " items)")))
                 (str))
-            (catch :default _
+            (catch #? (:cljs :default :clj Throwable) _
               (try
                 (-> statement
                     (assoc :values "(redacted)")
                     (str))
-                (catch :default _
+                (catch #? (:cljs :default :clj Throwable) _
                   "(bad input?)")))))
       (println e)
       (throw e))))
