@@ -1,8 +1,10 @@
 (ns witchy.db.migration
   (:require
-   [witchy.db.shared :refer [format-sql]]
+   #?(:cljs [applied-science.js-interop :as j])
    [honey.sql :as sql]
-   [promesa.core :as p]))
+   [promesa.core :as p]
+   [witchy.db.internal :as internal]
+   [witchy.db.shared :refer [format-sql]]))
 
 (def ^:private log-error #? (:cljs js/console.error
                              :clj println))
@@ -80,6 +82,28 @@
         (execute {:raw (str "PRAGMA user_version = " new-version)})
         (println "Migrated from " initial-version " -> " (:version schema)))
       (println "DB up-to-date!"))))
+
+(defn auto-migrate
+  ([opts]
+   (let [{:keys [db schema] :as commands} @internal/state]
+     (auto-migrate db commands schema opts)))
+  ([db commands schema {:keys [initial-version]}]
+   (-> (p/let [db-value db
+               {:keys [query execute]} commands
+               initial-version (or initial-version
+                                   (p/let [[result] (query db-value {:raw "PRAGMA user_version"})
+                                           {initial-version :user_version} #?(:cljs (j/lookup result)
+                                                                              :clj result)]
+                                     initial-version))]
+         (perform
+          {:query (partial query db-value)
+           :execute (partial execute db-value)}
+          initial-version
+          schema)
+         db-value)
+       (p/catch (fn [e]
+                  (log-error "[migration] FAILED to setup db: " e)
+                  (p/rejected e))))))
 
 #_:clj-kondo/ignore
 (comment
