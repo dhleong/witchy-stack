@@ -1,7 +1,8 @@
 (ns witchy.db.shared
   (:require
    [clojure.string :as str]
-   [honey.sql :as sql]))
+   [honey.sql :as sql]
+   [witchy.db.internal :as internal]))
 
 (def ^:private default-opts {:quoted true})
 
@@ -66,6 +67,7 @@
 (defn- format-sql-impl [statement]
   (let [opts (merge
               default-opts
+              (:format-opts @internal/state)
               (select-keys statement [:params :pretty]))
         opts (update opts :params (fn [params]
                                     (cond->> params

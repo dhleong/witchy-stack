@@ -22,9 +22,10 @@
 
 (defn init!
   ([impl] (init! impl nil))
-  ([{:keys [db execute query]} schema]
+  ([{:keys [db execute query format-opts]} schema]
    {:pre [(and db execute query)]}
    (reset! state {:db db
+                  :format-opts format-opts
                   :execute (wrap-db-fn execute)
                   :query (wrap-db-fn query)})
    (when schema
