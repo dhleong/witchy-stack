@@ -51,7 +51,7 @@
   (let [sql (assoc spec :create-trigger [trigger-name :if-not-exists])]
     (execute-logging cmds sql)))
 
-(defn perform [{:keys [execute] :as cmds} initial-version schema]
+(defn perform [{:keys [execute] :as cmds} initial-version schema {:keys [update-version?]}]
   (p/let [new-version
           (cond
             (= (:version schema) initial-version)
@@ -79,8 +79,10 @@
             (println "TODO Migrate from " initial-version " -> " (:tables schema)))]
     (if new-version
       (p/do
-        (execute {:raw (str "PRAGMA user_version = " new-version)})
-        (println "Migrated from " initial-version " -> " (:version schema)))
+        (when update-version?
+          (execute {:raw (str "PRAGMA user_version = " new-version)}))
+        (println "Migrated from " initial-version " -> " (:version schema))
+        new-version)
       (println "DB up-to-date!"))))
 
 (defn auto-migrate
@@ -90,6 +92,7 @@
   ([db commands schema {:keys [initial-version]}]
    (-> (p/let [db-value db
                {:keys [query execute]} commands
+               use-pragma-version? (nil? initial-version)
                initial-version (or initial-version
                                    (p/let [[result] (query db-value {:raw "PRAGMA user_version"})
                                            {initial-version :user_version} #?(:cljs (j/lookup result)
@@ -99,7 +102,8 @@
           {:query (partial query db-value)
            :execute (partial execute db-value)}
           initial-version
-          schema)
+          schema
+          {:update-version? use-pragma-version?})
          db-value)
        (p/catch (fn [e]
                   (log-error "[migration] FAILED to setup db: " e)
