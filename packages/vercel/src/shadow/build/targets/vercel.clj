@@ -37,7 +37,7 @@
         (assoc-in [::build/config :runtime] :node)
 
         (not (:output-dir config))
-        (assoc-in [::build/config :runtime] "api")
+        (assoc-in [::build/config :output-dir] "api")
 
         (not (get-in config [:js-options :js-provider]))
         ; NOTE: It's not immediately clear to me why we need both, but 
