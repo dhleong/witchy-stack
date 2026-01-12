@@ -62,8 +62,10 @@
         (println "};\n")
 
         (println "export async function handleRequest(request) {")
-        (println "  const url = new URL(request.url);")
-        (println "  const fetchHandlers = registry[url.pathname];")
+        ; compat with localdev mode vs prod mode: Conceivably could
+        ; compile out, but let's just be defensive
+        (println "  const path = request.url.startsWith('/') ? request.url : new URL(request.url).pathname;")
+        (println "  const fetchHandlers = registry[path];")
         (println "  if (fetchHandlers == null) return new Response(null, { status: 404 });")
         (println "  const handlers = await fetchHandlers();")
         (println "  const handler = handlers[request.method];")
