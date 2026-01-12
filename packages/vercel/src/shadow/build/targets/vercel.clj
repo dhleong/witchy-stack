@@ -38,7 +38,7 @@
 
         (not (:output-dir config))
         (-> (assoc-in [::build/config :output-dir] "api")
-            (build-api/with-build-options {:output-dir "api"}))
+            (build-api/with-build-options {:output-dir (io/file "api")}))
 
         (not (get-in config [:js-options :js-provider]))
         ; NOTE: It's not immediately clear to me why we need both, but 
