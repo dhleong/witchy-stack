@@ -1,1 +1,3 @@
 .cpcache
+!build
+!packages/vercel/src/shadow/build/targets/vercel.clj

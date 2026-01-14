@@ -5,6 +5,9 @@
    [shadow.build.targets.esm :as esm]
    [clojure.java.io :as io]))
 
+(def default-valid-methods
+  #{:DELETE :GET :HEAD :PATCH :POST :PUT :OPTIONS})
+
 (defmulti unpack-config type)
 (defmethod unpack-config clojure.lang.Symbol
   [config]
@@ -52,7 +55,9 @@
                          ::build/keys [config]
                          :as state}]
   (let [entrypoint-path (or (:entrypoint config)
-                            (io/file output-dir "entrypoint.js"))]
+                            (io/file output-dir "entrypoint.js"))
+        boilerplate (slurp (io/resource "witchy/vercel/entrypoint-boilerplate.js"))
+        valid-methods (:valid-methods config default-valid-methods)]
     (io/make-parents entrypoint-path)
     (with-open [out (io/writer entrypoint-path)]
       (binding [*out* out]
@@ -61,17 +66,12 @@
           (println (str " \"/api/" (name fn-name) "\": () => import(\"./" (name fn-name) ".js\"),")))
         (println "};\n")
 
-        (println "export async function handleRequest(request) {")
-        ; compat with localdev mode vs prod mode: Conceivably could
-        ; compile out, but let's just be defensive
-        (println "  const path = request.url.startsWith('/') ? request.url : new URL(request.url).pathname;")
-        (println "  const fetchHandlers = registry[path];")
-        (println "  if (fetchHandlers == null) return new Response(null, { status: 404 });")
-        (println "  const handlers = await fetchHandlers();")
-        (println "  const handler = handlers[request.method];")
-        (println "  if (handler == null) return new Response(null, { status: 405 });")
-        (println "  return handler(request);")
-        (println "}"))))
+        (println "export const validMethods = {")
+        (doseq [method-name valid-methods]
+          (println (str " \"" (name method-name) "\": true,")))
+        (println "};\n")
+
+        (println boilerplate))))
   state)
 
 #_{:clojure-lsp/ignore [:clojure-lsp/unused-public-var]}
