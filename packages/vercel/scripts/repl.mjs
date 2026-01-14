@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: '.env.local' });
 
-import { handleRequest } from '../api/entrypoint.js';
+import { handleRequest, validMethods } from '../api/entrypoint.js';
 
 import Fastify from 'fastify'
 
@@ -14,8 +14,7 @@ const fastify = Fastify({
 
 fastify.route({
     path: '/api/*',
-    method: ['DELETE', 'GET', 'HEAD', 'PATCH', 'POST', 'PUT', 'OPTIONS'],
-    bodyLimit: 0,
+    method: Object.keys(validMethods),
     handler: async (request) => {
         // This is somewhat hacky, but gives us an API-compatible harness that keeps its state...
         const encoder = new TextEncoder("utf-8");
@@ -28,7 +27,19 @@ fastify.route({
             method: request.method
         });
 
-        return handleRequest(req);
+        const response = await handleRequest(req);
+
+        // If you're using this with a web app, you will probably need
+        // to accept CORS requests
+        if (
+            !response.headers.has('Access-Control-Allow-Origin')
+            && request.headers.origin.startsWith('http://localhost')
+        ) {
+            response.headers.set('Access-Control-Allow-Headers', '*');
+            response.headers.set('Access-Control-Allow-Origin', request.headers.origin);
+        }
+
+        return response;
     }
 })
 
