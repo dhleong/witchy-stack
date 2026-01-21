@@ -33,7 +33,7 @@
 
 (defn configure [{::build/keys [config] :as state}]
   (-> state
-      (update-in [::build/config :modules] merge (functions->modules (:functions config)))
+      (update-in [::build/config :modules] build-api/deep-merge (functions->modules (:functions config)))
 
       (cond->
        (not (:runtime config))
