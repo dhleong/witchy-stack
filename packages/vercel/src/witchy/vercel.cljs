@@ -72,7 +72,7 @@
                 json (delay (-> (.decode (js/TextDecoder. "utf-8") body)
                                 (js/JSON.parse)
                                 (js->clj :keywordize-keys keywordize-keys)))
-                response (handler (->Req req body json))]
+                response (handler (->Req req body json {}))]
           (if (instance? js/Response response)
             response
             (js/Response.json (clj->js response))))
