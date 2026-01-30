@@ -20,6 +20,7 @@
          (map (fn [[k v]]
                 (MapEntry. k v nil))))))
 
+(declare ->Req)
 (deftype Req [^js req body json extras]
   ILookup
   (-lookup
