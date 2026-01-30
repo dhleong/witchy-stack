@@ -28,10 +28,13 @@
     (case k
       :headers (->Headers (.-headers req))
       :body body
-      :json @json))
+      :json @json
+      (get extras k)))
   (-lookup
     [o k not-found]
-    (or (-lookup o k) not-found))
+    (case k
+      (:headers :body :json) (-lookup o k not-found)
+      (get extras k not-found)))
 
   IAssociative
   (-contains-key? [_ k]
