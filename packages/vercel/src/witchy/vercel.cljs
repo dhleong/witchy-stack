@@ -20,7 +20,7 @@
          (map (fn [[k v]]
                 (MapEntry. k v nil))))))
 
-(deftype Req [^js req body json]
+(deftype Req [^js req body json extras]
   ILookup
   (-lookup
     [_ k]
@@ -30,17 +30,34 @@
       :json @json))
   (-lookup
     [o k not-found]
-    (or (-lookup o k) not-found)))
+    (or (-lookup o k) not-found))
+
+  IAssociative
+  (-contains-key? [_ k]
+    (or (#{:body :json :headers} k)
+        (contains? extras k)))
+
+  (-assoc [_ k v]
+    ; TODO: Should we support overwriting the builtin keys?
+    (->Req req body json (assoc extras k v)))
+
+  IMap
+  (-dissoc [_ k]
+    ; TODO: Should we support overwriting the builtin keys?
+    (->Req req body json (dissoc extras k))))
 
 #_{:clojure-lsp/ignore [:clojure-lsp/unused-public-var]}
 (defn json
   "Convenience wrapper around a json request handler function for
   compatibility with Vercel's functions. Your handler will receive a Req
-  object, which looks like a clojure dict containing {:headers, :body, :json}
-
+  object, which looks like a clojure map containing {:headers, :body, :json}
+ 
   Unpacking :json is lazy, in case you need access to the raw request
-  :body. By default, JSON keys are keywordized, but this can be disabled
-  by passing `{:keywordize-keys false}` to the optional `opts` param.
+  :body. You can also `assoc` and `dissoc` additional keys on Req
+  for middleware use.
+  
+  By default, JSON keys are keywordized, but this can be disabled by
+  passing `{:keywordize-keys false}` to the optional `opts` param.
 
   The handler is assumed to return a Promise, which may reject with an `ex-info` exception. If `:code` is a keyword in the `ex-data`, it will be
   converted to an appropriate HTTP status code. The response object will
