@@ -1,5 +1,6 @@
 {:paths ["packages/core/src"
          "packages/db/src"
+         "packages/web/src"
          "packages/vercel/src"]
 
  :deps {com.cognitect/transit-cljs {:mvn/version "0.8.264"}
