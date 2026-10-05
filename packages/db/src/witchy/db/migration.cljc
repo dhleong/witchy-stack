@@ -26,9 +26,10 @@
    :with-columns (concat
                   (:columns table)
                   (when-let [primary-key (:primary-key table)]
-                    ; NOTE: If primary-key is not seq? then it was
-                    ; just extracted by our transform code
-                    (when (seq? primary-key)
+                    ; NOTE: If primary-key is not seq? then it was just
+                    ; extracted from a column by our transform code
+                    ; (extract-primary-key)
+                    (when (sequential? primary-key)
                       [[(into [:primary-key] primary-key)]]))
                   (when-let [unique (:unique table)]
                     [(map
