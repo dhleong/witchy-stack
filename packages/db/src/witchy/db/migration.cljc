@@ -52,7 +52,17 @@
   (let [sql (assoc spec :create-trigger [trigger-name :if-not-exists])]
     (execute-logging cmds sql)))
 
-(defn perform [{:keys [execute] :as cmds} initial-version schema {:keys [update-version?]}]
+(defn- perform-pragma [{:keys [execute] :as _cmds} k v]
+  (execute {:raw (str "PRAGMA "
+                      (cond-> k
+                        (keyword? k)
+                        (name))
+                      " = "
+                      (cond-> v
+                        (keyword? v)
+                        (name)))}))
+
+(defn perform [cmds initial-version schema {:keys [update-version?]}]
   (p/let [new-version
           (cond
             (= (:version schema) initial-version)
@@ -61,7 +71,9 @@
             ; Initial setup
             (= 0 initial-version)
             (p/do!
-              ; TODO: Consider: PRAGMA journal_mode = WAL
+              ; EG: {:journal_mode :wal}
+             (p/doseq [[k v] (:pragma schema)]
+               (perform-pragma cmds k v))
 
              (p/doseq [spec (:tables schema)]
                (perform-create-table cmds spec)
@@ -81,7 +93,7 @@
     (if new-version
       (p/do
         (when update-version?
-          (execute {:raw (str "PRAGMA user_version = " new-version)}))
+          (perform-pragma cmds :user_version new-version))
         (println "Migrated from " initial-version " -> " (:version schema))
         new-version)
       (println "DB up-to-date!"))))
