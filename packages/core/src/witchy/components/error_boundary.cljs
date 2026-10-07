@@ -40,7 +40,7 @@
 
          (when info
            [:pre "Component Stack:\n"
-            (.-componentStack info)])
+            (.-componentStack ^js info)])
 
          [:pre "Error:\n"
           (cond
