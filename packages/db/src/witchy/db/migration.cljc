@@ -12,6 +12,9 @@
 (def ^:private format-obj #? (:cljs clj->js
                               :clj identity))
 
+(def ^:private persistent-pragmas
+  #{:journal_mode :synchronous})
+
 (defn- execute-logging [{:keys [execute]} sql]
   (-> (execute sql)
       (p/catch
@@ -72,7 +75,7 @@
             (= 0 initial-version)
             (p/do!
               ; EG: {:journal_mode :wal}
-             (p/doseq [[k v] (:pragma schema)]
+             (p/doseq [[k v] (select-keys (:pragma schema) persistent-pragmas)]
                (perform-pragma cmds k v))
 
              (p/doseq [spec (:tables schema)]
@@ -90,6 +93,12 @@
             ; TODO: Migrations
             :else
             (println "TODO Migrate from " initial-version " -> " (:tables schema)))]
+
+    ; Always run per-connection pragmas
+    (p/doseq [[k v] (:pragma schema)]
+      (when-not (contains? persistent-pragmas k)
+        (perform-pragma cmds k v)))
+
     (if new-version
       (p/do
         (when update-version?
