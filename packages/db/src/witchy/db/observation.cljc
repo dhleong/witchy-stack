@@ -1,6 +1,7 @@
 (ns witchy.db.observation
   (:require
    [medley.core :refer [map-vals]]
+   [witchy.db.internal :refer [state]]
    [witchy.db.interop :as i]))
 
 ; map of table-name -> (r/atom version)
@@ -74,7 +75,30 @@
          extract-tables
          (vals with)))))))
 
+(defn extract-trigger-tables
+  "Given a mutating query, return a set of tables that might
+  be mutated as a side effect due to registered triggers"
+  [query]
+  (when-some [triggers (get-in @state [:schema :triggers])]
+    (into
+     #{}
+     (mapcat
+      (fn [{:keys [after] :as trigger-body}]
+        (when
+         (or (and (= (:delete-from query) (last after))
+                  (= :delete (first after)))
+             (and (= (:insert-into query) (last after))
+                  (= :insert (first after)))
+             (and (= (:update query) (last after))
+                  (= :update (first after)))
+             (and (= (:replace-into query) (last after))
+                  (#{:insert :update} (first after))))
+          (extract-tables (:begin trigger-body))))
+
+      (vals triggers)))))
+
 (defn notify-updates-from-query [query]
   (when-not (:select query)
-    (doseq [table (extract-tables query)]
+    (doseq [table (into (extract-tables query)
+                        (extract-trigger-tables query))]
       (notify-table-updated table))))
