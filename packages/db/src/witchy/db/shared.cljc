@@ -46,6 +46,16 @@
    :raw))
 
 (sql/register-clause!
+ :when
+ (fn [_ x]
+   (let [[formatted-when & params] (sql/format-expr x)]
+     (into [(->> [(sql/sql-kw :when)
+                  formatted-when]
+                 (str/join " "))]
+           params)))
+ :where)
+
+(sql/register-clause!
  :begin
  (fn [_ x]
    (let [[nested & rest] (sql/format-dsl x)]
