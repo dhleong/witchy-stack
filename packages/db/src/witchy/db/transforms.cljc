@@ -24,7 +24,8 @@
   IColumnTransform
   (db-column-type [_] :integer)
   (db->clj [_ db-value]
-    (not= db-value 0))
+    (when (some? db-value)
+      (not= db-value 0)))
   (clj->db [_ clj-value]
     clj-value))
 
