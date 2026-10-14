@@ -31,17 +31,23 @@
    (when schema
      (swap! state setup/setup schema))))
 
+(defn- maybe-notify-updates-from-query [statement]
+  (when-not *notify-transaction?*
+    (binding [*notify-transaction?* true]
+      (notify-updates-from-query statement))))
+
 (defn execute [statement]
   (let [{f :execute db :db} @state]
     (p/do
       (f db statement)
-      (when-not *notify-transaction?*
-        (binding [*notify-transaction?* true]
-          (notify-updates-from-query statement))))))
+      (maybe-notify-updates-from-query statement))))
 
 (defn query [statement]
   (let [{f :query db :db} @state]
-    (f db statement)))
+    (p/let [result (f db statement)]
+      (when (:delete-from statement)
+        (maybe-notify-updates-from-query statement))
+      result)))
 
 (defn query-first [statement]
   (p/let [result-set (query statement)]
