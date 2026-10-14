@@ -1,6 +1,6 @@
 (ns witchy.db.reactive
   (:require
-   [re-frame.core :refer [subscribe]]
+   [re-frame.core :refer [reg-sub subscribe]]
    [re-frame.db :refer [app-db]]
    [re-frame.interop :refer [make-reaction]]
    [re-frame.loggers :refer [console]]
@@ -171,3 +171,16 @@
 
              (:results @results-atom)))))))))
 
+(defn reg-query-first
+  "As with reg-query, but returns the first result (if any)."
+  [query-id & args]
+
+  (let [base-query-id (str "base-query" query-id)]
+    (apply reg-query
+           base-query-id
+           args)
+
+    (reg-sub
+     query-id
+     :<- [base-query-id]
+     :-> first)))
