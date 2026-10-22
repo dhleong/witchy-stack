@@ -1,5 +1,6 @@
 {:paths ["packages/core/src"
          "packages/db/src"
+         "packages/spec/src"
          "packages/web/src"
          "packages/vercel/src"]
 
