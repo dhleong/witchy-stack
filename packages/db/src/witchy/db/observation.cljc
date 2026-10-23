@@ -38,6 +38,11 @@
    swap-or-ratom!
    inc 0))
 
+(defn- tables-from-insert-into [param]
+  (if (vector? param)
+    (first param)
+    param))
+
 (defn extract-tables [query]
   (letfn [(dealias [maybe-aliased]
             (cond
@@ -67,7 +72,9 @@
 
       (keep
        (fn [clause]
-         (clause query))
+         (cond-> (clause query)
+           (#{:replace-into :insert-into} clause)
+           (tables-from-insert-into)))
        [:delete-from :update :replace-into :insert-into])
 
       (when-let [with (:with query)]
@@ -88,7 +95,7 @@
          (or (and (= (:delete-from query) (last after))
                   (= :delete (first after)))
              (and (= (:insert-into query) (last after))
-                  (= :insert (first after)))
+                  (= :insert (tables-from-insert-into (first after))))
              (and (= (:update query) (last after))
                   (= :update (first after)))
              (and (= (:replace-into query) (last after))

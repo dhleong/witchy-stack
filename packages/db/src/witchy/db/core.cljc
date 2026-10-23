@@ -42,10 +42,12 @@
       (f db statement)
       (maybe-notify-updates-from-query statement))))
 
+(def ^:private mutating-statement #{:delete-from :insert-into :update})
+
 (defn query [statement]
   (let [{f :query db :db} @state]
     (p/let [result (f db statement)]
-      (when (:delete-from statement)
+      (when (some statement mutating-statement)
         (maybe-notify-updates-from-query statement))
       result)))
 
