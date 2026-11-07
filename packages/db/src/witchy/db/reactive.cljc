@@ -182,5 +182,7 @@
 
     (reg-sub
      query-id
-     :<- [base-query-id]
-     :-> first)))
+     (fn [[_ & user-args]]
+       (subscribe (into [base-query-id] user-args)))
+     (fn [results _]
+       (first results)))))
