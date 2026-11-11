@@ -107,6 +107,14 @@
         new-version)
       (println "DB up-to-date!"))))
 
+(defn- auto-optimize [db {:keys [execute]}]
+  ; Optimize (with ANALYZE) all tables:
+  (-> (p/do
+        (execute db {:raw "PRAGMA optimize = 0x10002"}))
+      (p/catch
+       (fn [e]
+         (log-error "[migration] auto-optimize failed: " e)))))
+
 (defn auto-migrate
   ([opts]
    (let [{:keys [db schema] :as commands} @internal/state]
@@ -126,6 +134,12 @@
           initial-version
           schema
           {:update-version? use-pragma-version?})
+
+         (when-not (false? (get-in schema [:opts :optimize?]))
+           (auto-optimize db-value commands)
+           ; return nil to avoid waiting on this
+           nil)
+
          db-value)
        (p/catch (fn [e]
                   (log-error "[migration] FAILED to setup db: " e)
