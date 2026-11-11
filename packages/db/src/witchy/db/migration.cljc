@@ -13,7 +13,7 @@
                               :clj identity))
 
 (def ^:private persistent-pragmas
-  #{:journal_mode :synchronous})
+  #{:journal_mode})
 
 (defn- execute-logging [{:keys [execute]} sql]
   (-> (execute sql)
