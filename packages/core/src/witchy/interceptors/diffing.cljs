@@ -4,15 +4,23 @@
 
 (defn create-diffing
   "Create (as ->interceptor) a 'diffing' interceptor that monitors a
-  path into the db and calls :after when that path changes. It will not
-  be called if the path could not be found in the DB either before or after
-  your event handler.
+  path into the db and calls :after when that path changes.
 
   The :after function is called as:
 
     (after context resulting-value initial-value)
+
+  Other config keys:
+
+  :skip-if-initializing? - If truthy, :after will not be called if the path
+                could not be found in the DB before your event handler ran.
+  :skip-if-clearing? - If truthy, :after will not be called if the path could
+                not be found in the DB after your event handler ran.
+
+  If the key was not in the DB either before *or* after the event handler,
+  :after will not be run regardless of the above two configs.
   "
-  [{:keys [id path after]}]
+  [{:keys [id path after skip-if-clearing? skip-if-initializing?]}]
   {:pre [(some? id)
          (some? path)
          (ifn? after)]}
@@ -34,11 +42,24 @@
 
                  context))
      :after (fn diffing-after [context]
-              (let [initial-value (get-path (get-coeffect context :db {}))
-                    resulting-value (get-path (get-effect context :db {}))]
-                (if-not (or (= ::not-found initial-value)
-                            (= ::not-found resulting-value)
+              (let [initial-db (get-coeffect context :db {})
+                    initial-value (get-path initial-db)
+                    resulting-value (get-path (get-effect context :db initial-db))
+                    initializing? (= ::not-found initial-value)
+                    clearing? (= ::not-found resulting-value)]
+                (if-not (or (and skip-if-initializing?
+                                 initializing?)
+                            (and skip-if-clearing?
+                                 clearing?)
+                            ; If both "initializing" *and* "clearing" then
+                            ; actually we just didn't touch it
+                            (and initializing? clearing?)
                             (= initial-value resulting-value))
-                  (after context resulting-value initial-value)
+                  (after
+                   context
+                   (when-not clearing?
+                     resulting-value)
+                   (when-not initializing?
+                     initial-value))
 
                   context))))))

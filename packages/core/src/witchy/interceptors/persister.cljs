@@ -18,6 +18,8 @@
                                       (coll? db-path) (path->str db-path)
                                       :else (str db-path)))
      :path db-path
+     :skip-if-initializing? true
+     :skip-if-clearing? true
      :after (fn path-persister-after [context resulting-value]
               (assoc-effect
                context
